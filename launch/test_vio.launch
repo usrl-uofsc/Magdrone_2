@@ -1,0 +1,7 @@
+<launch>
+  <!-- Launch Realsense VIO MavROS bridge -->
+  <include file="$(find px4_realsense_bridge)/launch/bridge.launch"/>
+  
+  <!-- Launch MavROS -->
+  <include file="$(find magdrone_2)/launch/px4.launch"/>
+</launch>

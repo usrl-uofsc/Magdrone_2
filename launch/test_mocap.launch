@@ -1,0 +1,8 @@
+<launch>
+  <!-- Launch VRPN and remp for MavROS -->
+  <remap from="/vrpn_client_node/Magdrone/pose" to="/mavros/vision_pose/pose"/>
+  <include file="$(find optitrack_utils)/launch/start_vrpn.launch"/>
+  
+  <!-- Launch MavROS -->
+  <include file="$(find magdrone_2)/launch/px4.launch"/>
+</launch>
