@@ -1,0 +1,10 @@
+<launch>
+  <!-- RealSense T265 -->
+  <include file="$(find magdrone_2)/launch/t265.launch"/>
+
+  <!-- RealSense to MavROS -->
+  <include file="$(find vision_to_mavros)/launch/t265_downfacing_tf_to_mavros.launch"/>
+  
+  <!-- Launch MavROS -->
+  <!--include file="$(find magdrone_2)/launch/px4.launch"/-->
+</launch>
