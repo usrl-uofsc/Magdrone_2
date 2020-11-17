@@ -2,12 +2,18 @@ plugin_blacklist:
 # common
 - 3dr_radio
 - safety_area
+
 # extras
-- image_pub
-- vibration
 - distance_sensor
+- fake_gps
+- gps_rtk
+- image_pub
+- px4flow
 - rangefinder
+- vibration
+- vfr_hud
 - wheel_odometry
+- wind_estimation
 
 plugin_whitelist: []
 #- 'sys_*'

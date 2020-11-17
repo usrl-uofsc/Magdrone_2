@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  tf2
 )
 
 ################################################
@@ -79,13 +80,17 @@ include_directories(
 #   src/${PROJECT_NAME}/magdrone_2.cpp
 # )
 
-# add_executable(${PROJECT_NAME}_node src/magdrone_2_node.cpp)
+add_executable(joy_control_node
+    src/joy_controller.cc
+)
 
-# add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(joy_control_node
+    ${catkin_EXPORTED_TARGETS}
+)
 
-# target_link_libraries(${PROJECT_NAME}_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(joy_control_node
+    ${catkin_LIBRARIES}
+)
 
 #############
 ## Install ##
