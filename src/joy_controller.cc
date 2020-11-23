@@ -60,7 +60,7 @@ bool joy_controller::initializeDrone()
         ROS_INFO("Vehicle not connected");
         return false;
     }
-
+/*
     // Send a few commands before starting
     ROS_INFO("Initiallizing");
     for (int i = 25; ros::ok && i > 0; --i)
@@ -69,7 +69,7 @@ bool joy_controller::initializeDrone()
         publishCommand();
         rate.sleep();
     }
-
+*/
     // Set control mode to offboard
     mavros_msgs::SetMode offboard_mode;
     offboard_mode.request.custom_mode = "OFFBOARD";
@@ -85,7 +85,7 @@ bool joy_controller::initializeDrone()
         ros::spinOnce();
         rate.sleep();
     }
-
+/*
     // Arm drone
     mavros_msgs::CommandBool arm_cmd;
     arm_cmd.request.value = true;
@@ -101,7 +101,7 @@ bool joy_controller::initializeDrone()
         ros::spinOnce();
         rate.sleep();
     }
-
+*/
     return true;
 }
 
@@ -135,7 +135,7 @@ void joy_controller::publishCommand()
 
         vel_control_pub.publish(cmd);
     }
-    else if (false)
+    else if (true)
     {
         mavros_msgs::PositionTarget cmd;
 
@@ -180,7 +180,7 @@ void joy_controller::publishCommand()
 
         raw_att_control_pub.publish(cmd);
     }
-    else if (true)
+    else if (false)
     {
         mavros_msgs::OverrideRCIn cmd;
 

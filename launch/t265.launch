@@ -7,6 +7,6 @@
       <arg name="accel_fps"                value="62"/>
       <arg name="enable_gyro"              value="false"/>
       <arg name="enable_accel"             value="false"/>
-      <arg name="publish_odom_tf"          value="false"/>
+      <arg name="publish_odom_tf"          value="true"/>
   </include>
 </launch>

@@ -92,6 +92,30 @@ target_link_libraries(joy_control_node
     ${catkin_LIBRARIES}
 )
 
+add_executable(vel_tune_node
+    src/velocity_controller_tuning.cc
+)
+
+add_dependencies(vel_tune_node
+    ${catkin_EXPORTED_TARGETS}
+)
+
+target_link_libraries(vel_tune_node
+    ${catkin_LIBRARIES}
+)
+
+add_executable(attitude_control_node
+    src/attitude_controller.cc
+)
+
+add_dependencies(attitude_control_node
+    ${catkin_EXPORTED_TARGETS}
+)
+
+target_link_libraries(attitude_control_node
+    ${catkin_LIBRARIES}
+)
+
 #############
 ## Install ##
 #############

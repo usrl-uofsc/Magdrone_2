@@ -21,26 +21,10 @@ private:
     ros::Subscriber state_sub;
 
     // ROS Publishers
-    /** pose_control_pub
-     * Publishes a velocity command on the world ENU frame
-     */
-    ros::Publisher pose_control_pub;
-    /** vel_control_pub
-     * Publishes a velocity command on the world ENU frame
-     */
-    ros::Publisher vel_control_pub;
     /** raw_vel_control_pub
      * Publishes a velocity command on the body FLU frame
      */
     ros::Publisher raw_vel_control_pub;
-    /** raw_att_control_pub
-     * Publishes an attitude command
-     */
-    ros::Publisher raw_att_control_pub;
-    /** rc_overide_control_pub
-     * Publishes an override of the RC (This might be a bad idea)
-     */
-    ros::Publisher rc_overide_control_pub;
 
     // ROS Services
     ros::ServiceClient arm_client;
@@ -55,9 +39,9 @@ private:
 
     // Data
     sensor_msgs::Joy joy_command;
+    bool run_test;
     ros::Time test_start;
     int loop_it;
-    bool run_test;
 
     mavros_msgs::State current_state;
 };
