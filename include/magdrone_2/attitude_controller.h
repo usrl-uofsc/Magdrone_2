@@ -1,6 +1,8 @@
 #pragma once
 
 #include <string>
+#include <thread>
+#include <mutex>
 
 // ROS
 #include <ros/ros.h>
@@ -14,10 +16,12 @@
 class px4_attitude_controller
 {
 public:
-    px4_attitude_controller(ros::NodeHandle &nh);
+    px4_attitude_controller(ros::NodeHandle &nh, double publisher_rate);
     ~px4_attitude_controller();
 
-    void publishCommand();
+    void publishCommand(double publisher_rate);
+
+    std::thread t_worker;
 
 private:
     // ROS Subscribers
@@ -38,7 +42,6 @@ private:
     void poseCallback(const geometry_msgs::PoseStamped::ConstPtr &msg);
 
     // Functions
-    bool initializeDrone();
     void changeMode(std::string &mode);
     void callArm(bool &state);
 
@@ -47,4 +50,7 @@ private:
     double current_yaw;
     sensor_msgs::Joy joy_command;
     mavros_msgs::AttitudeTarget cmd;
+
+    std::unique_ptr<std::mutex> status_mutex;
+    std::unique_ptr<std::mutex> pose_mutex;
 }; // px4_attitude_controller

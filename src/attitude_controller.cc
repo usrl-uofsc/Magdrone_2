@@ -8,7 +8,7 @@
 #include <mavros_msgs/CommandBool.h>
 #include <mavros_msgs/SetMode.h>
 
-px4_attitude_controller::px4_attitude_controller(ros::NodeHandle &nh)
+px4_attitude_controller::px4_attitude_controller(ros::NodeHandle &nh, double publisher_rate)
 {
     // Set up Subscribers
     joy_sub = nh.subscribe("/joy", 1, &px4_attitude_controller::joyCallback, this);
@@ -33,34 +33,13 @@ px4_attitude_controller::px4_attitude_controller(ros::NodeHandle &nh)
     // - Normalized thrust
     cmd.type_mask = cmd.IGNORE_ROLL_RATE |
                     cmd.IGNORE_PITCH_RATE;
+
+    status_mutex.reset(new std::mutex);
+    pose_mutex.reset(new std::mutex);
+    t_worker = std::thread(&px4_attitude_controller::publishCommand, this, 30);
 }
 
 px4_attitude_controller::~px4_attitude_controller() {}
-
-bool px4_attitude_controller::initializeDrone()
-{
-    ros::Rate rate(5);
-
-    // Check that FCU is connected
-    for (int i = 25; ros::ok && i > 0; --i)
-    {
-        ros::spinOnce();
-        rate.sleep();
-
-        if (current_state.connected)
-            break;
-    }
-
-    if (current_state.connected)
-    {
-        ROS_INFO("Vehicle is connected");
-    }
-    else
-    {
-        ROS_INFO("Vehicle not connected");
-        return false;
-    }
-}
 
 void px4_attitude_controller::changeMode(std::string &mode)
 {
@@ -78,7 +57,6 @@ void px4_attitude_controller::changeMode(std::string &mode)
             ROS_INFO("Offboard enabled");
             break;
         }
-        ros::spinOnce();
         rate.sleep();
     }
 }
@@ -91,15 +69,18 @@ void px4_attitude_controller::callArm(bool &state)
     mavros_msgs::CommandBool arm_cmd;
     arm_cmd.request.value = state;
 
-    ROS_INFO("Arming...");
+    if (state)
+        ROS_INFO("Arming...");
+    else
+        ROS_INFO("Disarming...");
+
     for (int i = 25; ros::ok && i > 0; --i)
     {
         if (arm_client.call(arm_cmd) && arm_cmd.response.success)
         {
-            ROS_INFO("Armed");
+            ROS_INFO("Done");
             break;
         }
-        ros::spinOnce();
         rate.sleep();
     }
 }
@@ -121,7 +102,7 @@ void px4_attitude_controller::joyCallback(const sensor_msgs::Joy::ConstPtr &msg)
             mode = "OFFBOARD";
         else
             mode = "POSCTL";
-        
+
         changeMode(mode);
     }
 
@@ -131,11 +112,11 @@ void px4_attitude_controller::joyCallback(const sensor_msgs::Joy::ConstPtr &msg)
         bool arm_call = !current_state.armed;
         callArm(arm_call);
     }
-
 }
 
 void px4_attitude_controller::stateCallback(const mavros_msgs::State::ConstPtr &msg)
 {
+    std::lock_guard<std::mutex> status_guard(*(status_mutex));
     current_state = *msg;
 }
 
@@ -145,48 +126,59 @@ void px4_attitude_controller::poseCallback(const geometry_msgs::PoseStamped::Con
     double q_x = msg->pose.orientation.x;
     double q_y = msg->pose.orientation.y;
     double q_z = msg->pose.orientation.z;
-    
+
     double sycp = 2.0 * (q_w * q_z + q_x * q_y);
     double cycp = 1.0 - 2.0 * (q_y * q_y + q_z * q_z);
 
+    std::lock_guard<std::mutex> pose_guard(*(pose_mutex));
     current_yaw = std::atan2(sycp, cycp);
 }
 
 // Publishers
-void px4_attitude_controller::publishCommand()
+void px4_attitude_controller::publishCommand(double publisher_rate)
 {
-    if (current_state.mode == "OFFBOARD" && current_state.connected)
+    ros::Rate rate(publisher_rate);
+
+    // Make sure vehicle is connected
+    ROS_INFO("Connecting to vehicle");
+    while (true)
     {
-        tf2::Quaternion q;
-        q.setRPY(-0.5 * joy_command.axes[1], 0.5 * joy_command.axes[2], current_yaw);
-        q.normalize();
-
-        cmd.orientation.x = q[0];
-        cmd.orientation.y = q[1];
-        cmd.orientation.z = q[2];
-        cmd.orientation.w = q[3];
-
-        cmd.body_rate.z = 1.0 * joy_command.axes[3];
-
-        cmd.thrust = joy_command.axes[0];
+        bool status_ok = false;
+        { // Lock status mutex
+            std::lock_guard<std::mutex> status_guard(*(status_mutex));
+            status_ok = current_state.connected;
+        }
+        if (status_ok)
+            break;
     }
-    raw_att_control_pub.publish(cmd);
-}
-
-int main(int argc, char **argv)
-{
-    ros::init(argc, argv, "attitude_controller_node");
-    ros::NodeHandle nh;
-    px4_attitude_controller px4_pilot(nh);
-
-    ros::Rate rate(30);
+    ROS_INFO("Vehicle is connected");
 
     while (ros::ok())
     {
-        ros::spinOnce();
-        px4_pilot.publishCommand();
+        bool status_ok;
+        { // Lock status mutex
+            std::lock_guard<std::mutex> status_guard(*(status_mutex));
+            status_ok = current_state.mode == "OFFBOARD" && current_state.connected;
+        }
+        if (status_ok)
+        {
+            tf2::Quaternion q;
+            { // Lock pose_mutex
+                std::lock_guard<std::mutex> pose_guard(*(pose_mutex));
+                q.setRPY(-0.5 * joy_command.axes[1], 0.5 * joy_command.axes[2], current_yaw);
+            }
+            q.normalize();
+
+            cmd.orientation.x = q[0];
+            cmd.orientation.y = q[1];
+            cmd.orientation.z = q[2];
+            cmd.orientation.w = q[3];
+
+            cmd.body_rate.z = 1.0 * joy_command.axes[3];
+
+            cmd.thrust = 0.35 * (1.0 + joy_command.axes[0]);
+        }
+        raw_att_control_pub.publish(cmd);
         rate.sleep();
     }
-
-    return 0;
 }

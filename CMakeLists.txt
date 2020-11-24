@@ -105,6 +105,7 @@ target_link_libraries(vel_tune_node
 )
 
 add_executable(attitude_control_node
+    src/attitude_controller_node.cc
     src/attitude_controller.cc
 )
 
